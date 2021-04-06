@@ -76,10 +76,10 @@ class NsJail:
 
         Disables memory swapping.
         """
+        # Pick a name for the cgroup
+        cgroup = "snekbox-" + str(uuid.uuid4())
         mem_max = str(self.config.cgroup_mem_max)
         if not self.config.use_cgroupv2:
-            # Pick a name for the cgroup
-            cgroup = "snekbox-" + str(uuid.uuid4())
 
             pids = Path(self.config.cgroup_pids_mount, cgroup)
             mem = Path(self.config.cgroup_mem_mount, cgroup)
@@ -109,10 +109,7 @@ class NsJail:
 
             return cgroup
         else:
-            group_id = str(uuid.uuid4())
-            mem_max = str(self.config.cgroup_mem_max)
-            cgroup_path = Path(self.config.cgroupv2_mount, "snekbox", group_id)
-            cgroup_path.mkdir(parents=True, exist_ok=True)
+            cgroup_path = Path(self.config.cgroupv2_mount)
             (cgroup_path / "memory.max").write_text(mem_max, encoding="utf-8")
             try:
                 (cgroup_path / "memory.swap.max").write_text(mem_max, encoding="utf-8")
@@ -122,7 +119,6 @@ class NsJail:
                     "This is probably because CONFIG_MEMCG_SWAP or CONFIG_MEMCG_SWAP_ENABLED is unset. "
                     "Please ensure swap memory is disabled on the system."
                 )
-            return group_id
 
     @staticmethod
     def _parse_log(log_lines: Iterable[str]) -> None:
@@ -244,7 +240,5 @@ class NsJail:
         if not self.config.use_cgroupv2:
             Path(self.config.cgroup_mem_mount, cgroup).rmdir()
             Path(self.config.cgroup_pids_mount, cgroup).rmdir()
-        else:
-            Path(self.config.cgroupv2_mount, "snekbox", cgroup).rmdir()
 
         return CompletedProcess(args, returncode, output, None)
